@@ -11,7 +11,6 @@
 
 
 @interface SocClient : NSObject
-
 @property (nonatomic, strong) GCDAsyncSocket *socket;
 @property (nonatomic, strong) NSDate *checkTime;
 @end
@@ -20,6 +19,10 @@
 @end
 
 @interface SocketServer () <GCDAsyncSocketDelegate>
+{
+    dispatch_source_t timer;
+}
+
 @property (nonatomic, strong) GCDAsyncSocket *socServer;
 @property (nonatomic, strong) NSMutableArray *mClientArr;
 @property (nonatomic, strong) NSThread *check;
@@ -61,7 +64,7 @@
 - (void)socket:(GCDAsyncSocket *)clientSocket didReadData:(NSData *)data withTag:(long)tag  {
     NSString *clientStr = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
     NSLog(@"%@", clientStr);
-    NSString *log = [NSString stringWithFormat:@"IP:%@ %zd data: %@",clientSocket.connectedHost,clientSocket.connectedPort,clientStr];
+    NSString *log = [NSString stringWithFormat:@"IP:%@ %hu data: %@",clientSocket.connectedHost,clientSocket.connectedPort,clientStr];
     
     for (SocClient *c in _mClientArr) {
         if (![clientSocket isEqual:c.socket]) {
@@ -105,7 +108,7 @@
 #pragma mark - check heartbeat
 - (void)checkClient {
     
-    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, nil);
+    timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, nil);
     dispatch_source_set_timer(timer, dispatch_walltime(NULL, 0), 20 * NSEC_PER_SEC, 0);
     dispatch_source_set_event_handler(timer, ^{
         [self doCheckClient];
